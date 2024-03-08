@@ -1,0 +1,22 @@
+
+###create and activate virtual environment####
+mkdir virtualEnvs
+cd virtualEnvs
+python3 -m venv myenv3
+source myenv3/bin/activate
+
+####install dependencies####
+pip install --upgrade pip
+pip install wheel==0.42.0
+pip install packaging==23.2
+pip install trl==0.7.11
+pip install wandb==0.16.4
+pip install peft==0.9.0
+pip install "unsloth[cu121-ampere-torch220] @ git+https://github.com/unslothai/unsloth.git"
+
+
+
+
+
+
+
