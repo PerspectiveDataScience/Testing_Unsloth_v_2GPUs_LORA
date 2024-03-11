@@ -1,7 +1,7 @@
 
 import os
 
-max_seq_length = 32768
+max_seq_length = 8000
 
 import torch
 print(torch.cuda.is_available())
@@ -17,63 +17,63 @@ os.environ["WANDB_DISABLED"] = "true"
 ##################################################################################################################################
 ##################OPTION 1: create model for single or multiple GPU trainning using accelerate####################################
 ##################################################################################################################################
-
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-
-
-from accelerate import PartialState
-device_string = PartialState().process_index
-
-
-model_id = "mistralai/Mistral-7B-Instruct-v0.2"
-
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    torch_dtype=torch.bfloat16,
-    attn_implementation="flash_attention_2", # works with Llama models and reduces memory reqs
-    device_map={'': device_string},
-
-)
-
-
-
-tokenizer = AutoTokenizer.from_pretrained(model_id,use_fast=True,trust_remote_code=True, model_max_length=max_seq_length)
-
-
-#setting up the tokenizer for unsloth and accelerate to be the same
-tokenizer.pad_token = '<unk>'
-tokenizer.add_bos_token = False
-tokenizer.padding_side = "right"
-print(tokenizer.pad_token)
-print(tokenizer.add_bos_token)
-print(tokenizer.padding_side)
-
-
-###########lora model setup for accelerate################
-
-from peft import LoraConfig, get_peft_model
-
-peft_config = LoraConfig(
-    r=128,
-    lora_alpha=128,
-    target_modules = ["q_proj",
-                      "k_proj",
-                      "v_proj",
-                      "o_proj",
-                      "gate_proj",
-                      "up_proj",
-                      "down_proj",
-                      ],
-    lora_dropout=0,
-    bias="none",
-)
-
-model = get_peft_model(model, peft_config)
-
-#number of trainable parameters
-print(sum(p.numel() for p in model.parameters() if p.requires_grad))
-
+#
+# from transformers import AutoTokenizer, AutoModelForCausalLM
+# import torch
+#
+#
+# from accelerate import PartialState
+# device_string = PartialState().process_index
+#
+#
+# model_id = "mistralai/Mistral-7B-Instruct-v0.2"
+#
+# model = AutoModelForCausalLM.from_pretrained(
+#     model_id,
+#     torch_dtype=torch.bfloat16,
+#     attn_implementation="flash_attention_2", # works with Llama models and reduces memory reqs
+#     device_map={'': device_string},
+#
+# )
+#
+#
+#
+# tokenizer = AutoTokenizer.from_pretrained(model_id,use_fast=True,trust_remote_code=True, model_max_length=max_seq_length)
+#
+#
+# #setting up the tokenizer for unsloth and accelerate to be the same
+# tokenizer.pad_token = '<unk>'
+# tokenizer.add_bos_token = False
+# tokenizer.padding_side = "right"
+# print(tokenizer.pad_token)
+# print(tokenizer.add_bos_token)
+# print(tokenizer.padding_side)
+#
+#
+# ###########lora model setup for accelerate################
+#
+# from peft import LoraConfig, get_peft_model
+#
+# peft_config = LoraConfig(
+#     r=128,
+#     lora_alpha=128,
+#     target_modules = ["q_proj",
+#                       "k_proj",
+#                       "v_proj",
+#                       "o_proj",
+#                       "gate_proj",
+#                       "up_proj",
+#                       "down_proj",
+#                       ],
+#     lora_dropout=0,
+#     bias="none",
+# )
+#
+# model = get_peft_model(model, peft_config)
+#
+# #number of trainable parameters
+# print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+#
 
 
 
@@ -84,50 +84,50 @@ print(sum(p.numel() for p in model.parameters() if p.requires_grad))
 ##################################################################################################################################
 ##################OPTION 2: create model for UNSLOTH training#####################################################################
 ##################################################################################################################################
-# from unsloth import FastLanguageModel
-#
-# model_id = "mistralai/Mistral-7B-Instruct-v0.2"
-#
-# model, tokenizer = FastLanguageModel.from_pretrained(
-#     model_name=model_id,
-#     max_seq_length=max_seq_length,
-#     dtype=None, # None for auto detection. Float16 for Tesla T4, V100, Bfloat16 for Ampere+
-#     load_in_4bit=False,
-#
-# )
-#
-# #setting up the tokenizer for unsloth and accelerate to be the same
-# #set add BOS token to false
-# tokenizer.add_bos_token = False
-#
-# print(tokenizer.pad_token)
-# print(tokenizer.add_bos_token)
-# print(tokenizer.padding_side)
-#
-#
-#
-# model = FastLanguageModel.get_peft_model(
-#     model,
-#     r = 128, # Choose any number > 0 ! Suggested 8, 16, 32, 64, 128
-#     lora_alpha=128,
-#
-#     target_modules = ["q_proj",
-#                       "k_proj",
-#                       "v_proj",
-#                       "o_proj",
-#                       "gate_proj",
-#                       "up_proj",
-#                       "down_proj",
-#                       ],
-#
-#     lora_dropout = 0, # Supports any, but = 0 is optimized
-#     bias = "none",    # Supports any, but = "none" is optimized
-# )
-#
-#
-# #number of trainable parameters
-# print(sum(p.numel() for p in model.parameters() if p.requires_grad))
-#
+from unsloth import FastLanguageModel
+
+model_id = "mistralai/Mistral-7B-Instruct-v0.2"
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name=model_id,
+    max_seq_length=max_seq_length,
+    dtype=None, # None for auto detection. Float16 for Tesla T4, V100, Bfloat16 for Ampere+
+    load_in_4bit=False,
+
+)
+
+#setting up the tokenizer for unsloth and accelerate to be the same
+#set add BOS token to false
+tokenizer.add_bos_token = False
+
+print(tokenizer.pad_token)
+print(tokenizer.add_bos_token)
+print(tokenizer.padding_side)
+
+
+
+model = FastLanguageModel.get_peft_model(
+    model,
+    r = 128, # Choose any number > 0 ! Suggested 8, 16, 32, 64, 128
+    lora_alpha=128,
+
+    target_modules = ["q_proj",
+                      "k_proj",
+                      "v_proj",
+                      "o_proj",
+                      "gate_proj",
+                      "up_proj",
+                      "down_proj",
+                      ],
+
+    lora_dropout = 0, # Supports any, but = 0 is optimized
+    bias = "none",    # Supports any, but = "none" is optimized
+)
+
+
+#number of trainable parameters
+print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+
 
 
 
@@ -165,6 +165,10 @@ train_df = train_df[['text']]
 #create column of token lengths
 train_df['token_length'] = train_df['text'].apply(lambda x: len(tokenizer.encode(x)))
 
+#what is the max token length?
+print(train_df['token_length'].max())
+
+
 #drop if token length is greater than max_seq_length
 train_df = train_df[train_df['token_length'] <= max_seq_length]
 
@@ -196,7 +200,7 @@ from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 training_arguments=transformers.TrainingArguments(
         save_steps=100,
         logging_steps=100,
-        num_train_epochs=20,
+        num_train_epochs=1,
         output_dir="./trainingResults",
         #evaluation_strategy="steps",
         do_eval=False,
@@ -227,7 +231,7 @@ collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenize
 trainer = SFTTrainer(
     dataset_text_field="text",
     max_seq_length=max_seq_length,
-    #tokenizer=tokenizer,  #comment out if using collator
+    tokenizer=tokenizer,
     model=model,
     train_dataset=train_dataset,
     #eval_dataset=test_dataset,
@@ -242,7 +246,9 @@ trainer.train()
 
 
 
-
+##################to launch training with accelerate####################
+# accelerate_config
+# accelerate launch fineTune.py
 
 
 
